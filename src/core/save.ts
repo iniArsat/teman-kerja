@@ -72,6 +72,9 @@ export async function loadState(
   }
   const fromMain = parseSave(main, now);
   if (fromMain) return { state: fromMain, fresh: false, problem: null };
+  // Simpanan utama gagal dibaca: boleh main dengan cadangan, tetapi jangan menyimpan
+  // (penyimpanan berikutnya akan menimpa file utama yang mungkin masih utuh).
+  const mainReadFailed = readFailed;
 
   let backup: string | null = null;
   if (backend.loadBackup) {
@@ -84,7 +87,7 @@ export async function loadState(
     const fromBackup = parseSave(backup, now);
     if (fromBackup) {
       console.warn("Simpanan utama tidak bisa dipakai; memakai cadangan.");
-      return { state: fromBackup, fresh: false, problem: null };
+      return { state: fromBackup, fresh: false, problem: mainReadFailed ? "gagal-baca" : null };
     }
   }
   const problem: LoadProblem = readFailed ? "gagal-baca" : main !== null || backup !== null ? "rusak" : "baru";
